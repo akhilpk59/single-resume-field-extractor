@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Screener</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 600px; margin: auto; }
+        label { font-weight: bold; }
+        .result-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .result-table th, .result-table td { border: 1px solid black; padding: 8px; text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Resume Screener</h2>
+
+        <label for="resumeUpload">Upload Resumes:</label>
+        <input type="file" id="resumeUpload" multiple accept=".pdf,.doc,.docx"><br><br>
+
+        <label>Select Fields to Extract:</label><br>
+        <input type="checkbox" name="fields" value="Name"> Name<br>
+        <input type="checkbox" name="fields" value="Email"> Email<br>
+        <input type="checkbox" name="fields" value="Phone"> Phone<br>
+        <input type="checkbox" name="fields" value="Skills"> Skills<br>
+        <input type="checkbox" name="fields" value="College/University Graduated Latest from"> Education<br>
+        <input type="checkbox" name="fields" value="Experience"> Experience<br><br>
+
+        <button onclick="uploadFiles()">Submit</button>
+
+        <h3>Extracted Information</h3>
+        <table class="result-table" id="resultTable">
+            <thead>
+                <tr id="tableHeaders"></tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        async function uploadFiles() {
+            let files = document.getElementById('resumeUpload').files;
+            let selectedFields = Array.from(document.querySelectorAll('input[name="fields"]:checked')).map(el => el.value);
+            if (files.length === 0 || selectedFields.length === 0) {
+                alert("Please upload at least one resume and select fields to extract.");
+                return;
+            }
+
+            let formData = new FormData();
+            for (let file of files) {
+                formData.append("resumes", file);
+            }
+            formData.append("fields", JSON.stringify(selectedFields));
+
+            let response = await fetch("https://resume-screener-backend-u2hfsb6yrq-el.a.run.app/upload", {
+                method: "POST",
+                body: formData
+            });
+
+            let result = await response.json();
+            displayResults(result);
+        }
+
+        function displayResults(data) {
+            let tableHeaders = document.getElementById("tableHeaders");
+            let tableBody = document.getElementById("tableBody");
+            tableHeaders.innerHTML = "";
+            tableBody.innerHTML = "";
+
+            if (data.length === 0) {
+                tableBody.innerHTML = "<tr><td colspan='10'>No data available</td></tr>";
+                return;
+            }
+
+            let fields = Object.keys(data[0]);
+            fields.forEach(field => {
+                let th = document.createElement("th");
+                th.textContent = field;
+                tableHeaders.appendChild(th);
+            });
+
+            data.forEach(row => {
+                let tr = document.createElement("tr");
+                fields.forEach(field => {
+                    let td = document.createElement("td");
+                    td.textContent = row[field] || "-";
+                    tr.appendChild(td);
+                });
+                tableBody.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+</html>
